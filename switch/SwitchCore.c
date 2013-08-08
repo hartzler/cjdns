@@ -177,7 +177,6 @@ static uint8_t receiveMessage(struct Message* message, struct Interface* iface)
     Assert_true(destIndex < NumberCompress_INTERFACES);
     Assert_true(sourceIndex < NumberCompress_INTERFACES);
 
-    core->interfaces[destIndex].bytesIn += message->length;
 
     if (1 == destIndex) {
         if (1 != (label & 0xf)) {
@@ -258,6 +257,8 @@ static uint8_t receiveMessage(struct Message* message, struct Interface* iface)
                "Forwarding packet ([%u] to [%u]), labels [0x%016" PRIx64 "] -> [0x%016" PRIx64 "]",
                sourceIndex, destIndex, label, targetLabel);
     */
+
+    core->interfaces[destIndex].bytesIn += message->length;
 
     const uint16_t err = sendMessage(&core->interfaces[destIndex], message, sourceIf->core->logger);
     if (err) {
