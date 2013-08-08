@@ -376,12 +376,18 @@ int SwitchCore_setRouterInterface(struct Interface* iface, struct SwitchCore* co
     return 0;
 }
 
-int SwitchCore_trafficStats(const struct SwitchCore* core, uint64_t* out)
+struct SwitchCore_stats* SwitchCore_trafficStats(const struct SwitchCore* core,
+                                                 struct Allocator* alloc)
 {
+    struct SwitchCore_stats* stats = Allocator_malloc(alloc, sizeof(struct SwitchCore_stats));
+
+    stats->count = core->interfaceCount;
+    stats->traffic = Allocator_malloc(alloc, sizeof(uint64_t) * 2 * stats->count);
+
     for (uint32_t i = 0; i < core->interfaceCount; i++) {
-      out[i*2] = core->interfaces[i].bytesOut;
-      out[i*2+1] = core->interfaces[i].bytesIn;
+      stats->traffic[i*2] = core->interfaces[i].bytesOut;
+      stats->traffic[i*2+1] = core->interfaces[i].bytesIn;
     }
 
-    return core->interfaceCount;
+    return stats;
 }

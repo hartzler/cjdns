@@ -30,14 +30,14 @@ struct Context
 static void trafficStats(Dict* args, void* vcontext, String* txid)
 {
     struct Context* context = vcontext;
-    uint64_t stats[256*2];
+    struct Allocator* temporaryAlloc = Allocator_child(context->alloc);
 
-    uint32_t count = SwitchCore_trafficStats(context->core, stats);
+    struct SwitchCore_stats* stats = SwitchCore_trafficStats(context->core, temporaryAlloc);
 
     List* list = NULL;
-    for (uint32_t i = 0; i < count; i++) {
-      list = List_addInt(list, stats[i*2], context->alloc);
-      list = List_addInt(list, stats[i*2+1], context->alloc);
+    for (int32_t i = 0; i < stats->count; i++) {
+      list = List_addInt(list, stats->traffic[i*2], temporaryAlloc);
+      list = List_addInt(list, stats->traffic[i*2+1], temporaryAlloc);
     }
 
     Dict response = Dict_CONST(
@@ -47,10 +47,12 @@ static void trafficStats(Dict* args, void* vcontext, String* txid)
 
     response = Dict_CONST(
         String_CONST("count"),
-        Int_OBJ(count), response
+        Int_OBJ(stats->count), response
     );
 
     Admin_sendMessage(&response, txid, context->admin);
+
+    Allocator_free(temporaryAlloc);
 }
 
 void SwitchCore_admin_register(struct SwitchCore* core,
