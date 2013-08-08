@@ -62,4 +62,13 @@ int SwitchCore_setRouterInterface(struct Interface* iface, struct SwitchCore* co
 
 void SwitchCore_swapInterfaces(struct Interface* if1, struct Interface* if2);
 
+/**
+ * Get then number of bytes sent / received per interface.
+ *
+ * @param core to the switchcore.
+ * @param out a buffer to fill up with out / in pairs for each interface
+ * @return the number of interfaces
+ */
+int SwitchCore_trafficStats(const struct SwitchCore* core, uint64_t* out);
+
 #endif

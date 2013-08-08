@@ -57,6 +57,10 @@ struct SwitchInterface
      * this number is subtraced from packet priority when the packet is sent down this interface.
      */
     uint32_t congestion;
+
+    // traffic counters
+    int64_t bytesOut;
+    int64_t bytesIn;
 };
 
 struct SwitchCore
@@ -147,7 +151,11 @@ static inline void sendError(struct SwitchInterface* iface,
 /** This never returns an error, it sends an error packet instead. */
 static uint8_t receiveMessage(struct Message* message, struct Interface* iface)
 {
+
     struct SwitchInterface* sourceIf = (struct SwitchInterface*) iface->receiverContext;
+
+    sourceIf->bytesOut += message->length;
+
     if (sourceIf->buffer > sourceIf->bufferMax) {
         Log_warn(sourceIf->core->logger, "Packet dropped because node seems to be flooding.");
         return Error_NONE;
@@ -168,6 +176,8 @@ static uint8_t receiveMessage(struct Message* message, struct Interface* iface)
 
     Assert_true(destIndex < NumberCompress_INTERFACES);
     Assert_true(sourceIndex < NumberCompress_INTERFACES);
+
+    core->interfaces[destIndex].bytesIn += message->length;
 
     if (1 == destIndex) {
         if (1 != (label & 0xf)) {
@@ -327,7 +337,9 @@ int SwitchCore_addInterface(struct Interface* iface,
         .core = core,
         .buffer = 0,
         .bufferMax = trust,
-        .congestion = 0
+        .congestion = 0,
+        .bytesIn = 0,
+        .bytesOut = 0
     }), sizeof(struct SwitchInterface));
 
     newIf->onFree = Allocator_onFree(iface->allocator, removeInterface, newIf);
@@ -350,7 +362,9 @@ int SwitchCore_setRouterInterface(struct Interface* iface, struct SwitchCore* co
         .core = core,
         .buffer = 0,
         .bufferMax = INT64_MAX,
-        .congestion = 0
+        .congestion = 0,
+        .bytesIn = 0,
+        .bytesOut = 0
     }), sizeof(struct SwitchInterface));
 
     iface->receiverContext = &core->interfaces[1];
@@ -359,4 +373,14 @@ int SwitchCore_setRouterInterface(struct Interface* iface, struct SwitchCore* co
     core->routerAdded = true;
 
     return 0;
+}
+
+int SwitchCore_trafficStats(const struct SwitchCore* core, uint64_t* out)
+{
+    for (uint32_t i = 0; i < core->interfaceCount; i++) {
+      out[i*2] = core->interfaces[i].bytesOut;
+      out[i*2+1] = core->interfaces[i].bytesIn;
+    }
+
+    return core->interfaceCount;
 }

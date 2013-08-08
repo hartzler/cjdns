@@ -51,6 +51,7 @@
 #include "net/SwitchPinger.h"
 #include "net/SwitchPinger_admin.h"
 #include "switch/SwitchCore.h"
+#include "switch/SwitchCore_admin.h"
 #include "tunnel/IpTunnel.h"
 #include "tunnel/IpTunnel_admin.h"
 #include "util/events/EventBase.h"
@@ -313,6 +314,8 @@ int Core_main(int argc, char** argv)
     struct Sockaddr* myAddr = Sockaddr_fromBytes(addr.ip6.bytes, Sockaddr_AF_INET6, alloc);
 
     struct SwitchCore* switchCore = SwitchCore_new(logger, alloc);
+    SwitchCore_admin_register(switchCore, admin, alloc);
+
     struct DHTModuleRegistry* registry = DHTModuleRegistry_new(alloc);
     ReplyModule_register(registry, alloc);
 
