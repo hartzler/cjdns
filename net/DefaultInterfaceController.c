@@ -479,6 +479,20 @@ static int getPeerStats(struct InterfaceController* ifController,
     return count;
 }
 
+static int removePeer(struct InterfaceController* ifController, uint8_t herPublicKey[32])
+{
+    struct Context* ic = Identity_cast((struct Context*) ifController);
+
+    for (uint32_t i = 0; i < ic->peerMap.count; i++) {
+        struct IFCPeer* peer = ic->peerMap.values[i];
+        if (!Bits_memcmp(herPublicKey, CryptoAuth_getHerPublicKey(peer->cryptoAuthIf), 32)) {
+          Allocator_free(peer->external->allocator);
+          return 0;
+        }
+    }
+    return InterfaceController_removePeer_NOTFOUND;
+}
+
 struct InterfaceController* DefaultInterfaceController_new(struct CryptoAuth* ca,
                                                            struct SwitchCore* switchCore,
                                                            struct RouterModule* routerModule,
@@ -492,6 +506,7 @@ struct InterfaceController* DefaultInterfaceController_new(struct CryptoAuth* ca
     Bits_memcpyConst(out, (&(struct Context) {
         .pub = {
             .registerPeer = registerPeer,
+            .removePeer = removePeer,
             .getPeerState = getPeerState,
             .populateBeacon = populateBeacon,
             .getPeerStats = getPeerStats,
